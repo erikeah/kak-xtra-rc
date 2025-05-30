@@ -12,10 +12,10 @@
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       perSystem = { config, self', inputs', pkgs, system, ... }: {
         packages.default = pkgs.rustPlatform.buildRustPackage {
-            name = "kakoune-extra-config";
+            name = "kak-xtra-rc";
             version = "0.1.0";
             src = ./.;
-            cargoHash = "";
+            cargoHash = "sha256-3Zuc7v/jHqY2bOc2vUeqruVprM2dFYLagmr/2e9EBbs=";
         };
         devShells.default = with pkgs; mkShell {
             packages = [ rust-analyzer rustfmt ];
