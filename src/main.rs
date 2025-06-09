@@ -1,6 +1,9 @@
+mod kak_xtra_rc;
+
+use kak_xtra_rc::config::parse_config_dir;
+use kak_xtra_rc::interface::source_kak;
 use std::env::{self, VarError};
 use std::path::Path;
-
 use std::process;
 
 #[derive(Debug)]
@@ -19,55 +22,6 @@ fn parse_args() -> Args {
         }
     }
     args
-}
-
-enum ConfigDirValidationErr {
-    DoNotExist,
-    IsNotAbsolutePath,
-    IsNotADirectory,
-    InvalidPath,
-}
-
-impl std::fmt::Display for ConfigDirValidationErr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ConfigDirValidationErr::IsNotAbsolutePath => {
-                write!(f, "provided path is not an absolute path")
-            }
-            ConfigDirValidationErr::DoNotExist => {
-                write!(f, "provided path do not exist")
-            }
-            ConfigDirValidationErr::IsNotADirectory => {
-                write!(f, "provided path is not a directory")
-            }
-            ConfigDirValidationErr::InvalidPath => {
-                write!(f, "invalid path")
-            }
-        }
-    }
-}
-
-fn parse_config_dir(config_dir: &str) -> Result<String, ConfigDirValidationErr> {
-    let actual_dir = Path::new(&config_dir);
-    if !actual_dir.exists() {
-        return Err(ConfigDirValidationErr::DoNotExist);
-    }
-    if !actual_dir.is_absolute() {
-        return Err(ConfigDirValidationErr::IsNotAbsolutePath);
-    }
-    if !actual_dir.is_dir() {
-        return Err(ConfigDirValidationErr::IsNotADirectory);
-    }
-    match actual_dir.to_str() {
-        Some(s) => {
-            if s.ends_with("/") {
-                Ok(s.trim_end_matches("/").to_owned())
-            } else {
-                Ok(s.to_owned())
-            }
-        }
-        None => Err(ConfigDirValidationErr::InvalidPath),
-    }
 }
 
 fn main() {
@@ -99,23 +53,15 @@ fn main() {
             }
             Ok(value) => value,
         };
-        let mut buf = String::new();
-        // TODO: wrap source rc logic inside a function
-        let rc_path = valid_dir.clone() + "/kakrc";
-        let rc = Path::new(&rc_path);
-        let rc_str = match rc.to_str() {
-            Some(value) => value,
-            None => {
-                continue;
-            }
-        };
-        if rc.exists() && rc.is_file() {
-            buf.push_str("source ");
-            buf.push_str(rc_str);
-            buf.push_str("\n");
-        } else {
-            eprintln!("ignoring '{valid_dir}' because does not contain a kakrc file");
+        {
+            let rc_path = valid_dir.clone() + "/kakrc";
+            let rc = Path::new(&rc_path);
+            let source = match source_kak(&rc) {
+                Ok(value) => value,
+                // TODO: Transparent error communication
+                Err(_e) => continue,
+            };
+            print!("{source}");
         }
-        print!("{buf}")
     }
 }
